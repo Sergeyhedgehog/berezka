@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Берёзка</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Экран загрузки -->
+    <div id="screen-loading" class="screen active">
+        <div class="loading-container">
+            <div class="logo">🌿</div>
+            <h1>Берёзка</h1>
+            <p>Загрузка...</p>
+            <div class="spinner"></div>
+        </div>
+    </div>
+
+    <!-- Экран авторизации -->
+    <div id="screen-auth" class="screen">
+        <div class="loading-container">
+            <div class="logo">🌿</div>
+            <h1>Берёзка</h1>
+            <div class="auth-card">
+                <div class="auth-tabs">
+                    <button class="auth-tab active" data-tab="login">Вход</button>
+                    <button class="auth-tab" data-tab="register">Регистрация</button>
+                </div>
+                <div class="auth-form">
+                    <input type="text" id="auth-username" placeholder="Логин" autocomplete="username" autocapitalize="off" spellcheck="false">
+                    <input type="password" id="auth-password" placeholder="Пароль" autocomplete="current-password">
+                    <button id="btn-auth" class="btn-primary btn-full">Войти</button>
+                    <p id="auth-error" class="status error"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Главный экран -->
+    <div id="screen-main" class="screen">
+        <div class="header">
+            <h1>🌿 Берёзка</h1>
+            <button id="btn-logout" class="btn-icon header-btn" title="Выйти">🚪</button>
+        </div>
+        <div class="main-content">
+            <div class="your-id-section">
+                <p class="label">Ваш логин:</p>
+                <div class="id-display">
+                    <span id="my-id">——</span>
+                    <button id="btn-copy" class="btn-icon" title="Скопировать">📋</button>
+                </div>
+                <p class="hint">Отправьте логин собеседнику</p>
+            </div>
+
+            <div class="connect-section">
+                <p class="label">Логин собеседника:</p>
+                <div class="input-row">
+                    <input type="text" id="peer-id-input" placeholder="Введите логин" autocomplete="off" autocapitalize="off" spellcheck="false">
+                    <button id="btn-connect" class="btn-primary">Написать</button>
+                </div>
+                <p id="connect-status" class="status"></p>
+            </div>
+
+            <div id="chats-list" class="chats-section">
+                <p class="label">Ваши чаты:</p>
+                <!-- Чаты будут добавлены динамически -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Экран чата -->
+    <div id="screen-chat" class="screen">
+        <div class="header chat-header">
+            <button id="btn-back" class="btn-icon">←</button>
+            <h1>Чат с <span id="chat-peer-name">——</span></h1>
+        </div>
+        <div id="messages" class="messages"></div>
+        <div class="chat-input">
+            <input type="text" id="message-input" placeholder="Сообщение..." autocomplete="off">
+            <button id="btn-send" class="btn-primary">→</button>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
