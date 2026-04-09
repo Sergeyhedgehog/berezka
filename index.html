@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Берёзка — Мессенджер</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Экран загрузки -->
+    <div id="screen-loading" class="screen active">
+        <div class="loading-container">
+            <div class="logo">🌿</div>
+            <h1>Берёзка</h1>
+            <p>Определяем ваш ID...</p>
+            <div class="spinner"></div>
+        </div>
+    </div>
+
+    <!-- Главный экран -->
+    <div id="screen-main" class="screen">
+        <div class="header">
+            <h1>🌿 Берёзка</h1>
+        </div>
+        <div class="main-content">
+            <div class="your-id-section">
+                <p class="label">Ваш ID:</p>
+                <div class="id-display">
+                    <span id="my-id">——</span>
+                    <button id="btn-copy" class="btn-icon" title="Скопировать">📋</button>
+                </div>
+                <p class="hint">Отправьте этот ID собеседнику</p>
+            </div>
+
+            <div class="connect-section">
+                <p class="label">ID собеседника:</p>
+                <div class="input-row">
+                    <input type="text" id="peer-id-input" placeholder="Введите ID" maxlength="6" autocomplete="off">
+                    <button id="btn-connect" class="btn-primary">Подключиться</button>
+                </div>
+                <p id="connect-status" class="status"></p>
+            </div>
+
+            <div id="pending-connections" class="pending-section">
+                <!-- Ожидающие подключения будут добавлены динамически -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Экран чата -->
+    <div id="screen-chat" class="screen">
+        <div class="header chat-header">
+            <button id="btn-back" class="btn-icon">←</button>
+            <h1>Чат с <span id="chat-peer-name">——</span></h1>
+        </div>
+        <div id="messages" class="messages"></div>
+        <div class="chat-input">
+            <input type="text" id="message-input" placeholder="Сообщение..." autocomplete="off">
+            <button id="btn-send" class="btn-primary">→</button>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
