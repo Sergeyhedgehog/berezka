@@ -418,15 +418,23 @@ function sendEmailNotification(recipientUsername, senderName, messageText) {
     var key = fbKey(recipientUsername);
     db.ref('users/' + key).once('value').then(function(s) {
         var data = s.val();
-        if (!data || !data.emailVerified || !data.emailNotifications || !data.email) return;
+        if (!data) { console.log('[email] user not found:', recipientUsername); return; }
+        if (!data.email) { console.log('[email] no email for:', recipientUsername); return; }
+        if (!data.emailVerified) { console.log('[email] email not verified for:', recipientUsername); return; }
+        if (!data.emailNotifications) { console.log('[email] notifications off for:', recipientUsername); return; }
 
         var preview = messageText.length > 100 ? messageText.substring(0, 100) + '...' : messageText;
+        console.log('[email] sending notification to:', data.email);
         emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_NOTIFY_TEMPLATE, {
             to_email: data.email,
             to_name: recipientUsername,
             from_name: senderName,
             message: preview
-        }).catch(function() {});
+        }).then(function() {
+            console.log('[email] sent OK');
+        }).catch(function(err) {
+            console.error('[email] error:', err);
+        });
     });
 }
 
