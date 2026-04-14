@@ -20,10 +20,10 @@ try {
 // ============================================================
 // EMAILJS — замени на свои ID с https://www.emailjs.com/
 // ============================================================
-var EMAILJS_PUBLIC_KEY = 'YOUR_PUBLIC_KEY';       // Account → API Keys → Public Key
-var EMAILJS_SERVICE_ID = 'YOUR_SERVICE_ID';       // Email Services → Service ID
-var EMAILJS_VERIFY_TEMPLATE = 'YOUR_VERIFY_TPL';  // шаблон подтверждения
-var EMAILJS_NOTIFY_TEMPLATE = 'YOUR_NOTIFY_TPL';  // шаблон уведомления
+var EMAILJS_PUBLIC_KEY = 'RIcm9uJNJbFjefEWS';
+var EMAILJS_SERVICE_ID = 'service_d62ejmd';
+var EMAILJS_VERIFY_TEMPLATE = 'template_nri6h8v';
+var EMAILJS_NOTIFY_TEMPLATE = 'template_4ybyipb';
 
 try {
     if (window.emailjs) emailjs.init(EMAILJS_PUBLIC_KEY);
