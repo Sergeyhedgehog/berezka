@@ -683,6 +683,36 @@ function loadChatsList() {
     });
 }
 
+function updateBadges() {
+    var items = chatsList.querySelectorAll('.chat-item');
+    for (var i = 0; i < items.length; i++) {
+        (function(el) {
+            var key = el.getAttribute('data-chat-key');
+            var info = allChatsData[key];
+            if (!info || !info.chatId) return;
+            db.ref('chats/' + info.chatId + '/messages').orderByChild('timestamp').limitToLast(MESSAGE_LIMIT).once('value').then(function(snap) {
+                var count = 0;
+                var myKey = fbKey(myUsername);
+                snap.forEach(function(child) {
+                    var m = child.val();
+                    if (m.sender && m.sender !== myUsername && m.sender !== '__system__' && !m.deleted) {
+                        if (!m.readBy || !m.readBy[myKey]) count++;
+                    }
+                });
+                var badge = el.querySelector('.chat-item-badge');
+                if (badge) {
+                    if (count > 0) {
+                        badge.textContent = count > 99 ? '99+' : count;
+                        badge.style.display = 'flex';
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                }
+            });
+        })(items[i]);
+    }
+}
+
 // ============================================================
 // Удаление чатов
 // ============================================================
@@ -1281,6 +1311,7 @@ function goBack() {
     currentChatId = null; currentChatType = null; currentPeerId = null;
     peerIdInput.value = '';
     showScreen(screenMain);
+    updateBadges();
 }
 
 // ============================================================
