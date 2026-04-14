@@ -368,6 +368,22 @@ html, body {
     font-weight: 600;
 }
 
+.chat-item-badge {
+    min-width: 22px; height: 22px; padding: 0 6px;
+    border-radius: 11px;
+    background: linear-gradient(135deg, var(--green-main), var(--green-dark));
+    color: var(--white);
+    font-size: 12px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 2px 6px rgba(76,175,80,0.4);
+    animation: badgeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+@keyframes badgeIn {
+    from { opacity: 0; transform: scale(0.5); }
+    to { opacity: 1; transform: scale(1); }
+}
+
 .chat-item-arrow { color: var(--text-light); font-size: 18px; flex-shrink: 0; }
 .no-chats { text-align: center; color: var(--text-light); font-size: 14px; padding: 20px; }
 

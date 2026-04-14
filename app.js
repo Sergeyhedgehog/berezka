@@ -640,7 +640,31 @@ function loadChatsList() {
                 '<div class="chat-item-name">' + escapeHtml(name) + (isGroup ? ' \uD83D\uDC65' : '') + '</div>' +
                 '<div class="chat-item-preview">' + escapeHtml(info.lastMessage || '') + '</div>' +
                 '</div>' +
+                '<span class="chat-item-badge" style="display:none"></span>' +
                 '<span class="chat-item-arrow">\u203A</span>';
+
+            // Подсчёт непрочитанных
+            (function(el, cid) {
+                db.ref('chats/' + cid + '/messages').orderByChild('timestamp').limitToLast(MESSAGE_LIMIT).once('value').then(function(snap) {
+                    var count = 0;
+                    var myKey = fbKey(myUsername);
+                    snap.forEach(function(child) {
+                        var m = child.val();
+                        if (m.sender && m.sender !== myUsername && m.sender !== '__system__' && !m.deleted) {
+                            if (!m.readBy || !m.readBy[myKey]) count++;
+                        }
+                    });
+                    var badge = el.querySelector('.chat-item-badge');
+                    if (badge) {
+                        if (count > 0) {
+                            badge.textContent = count > 99 ? '99+' : count;
+                            badge.style.display = 'flex';
+                        } else {
+                            badge.style.display = 'none';
+                        }
+                    }
+                });
+            })(item, info.chatId);
 
             item.addEventListener('click', function() {
                 if (isGroup) openGroupChat(info.chatId, info.groupName);
