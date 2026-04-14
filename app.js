@@ -17,6 +17,18 @@ try {
     document.getElementById('loading-text').textContent = '\u041E\u0448\u0438\u0431\u043A\u0430 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u044F.';
 }
 
+// ============================================================
+// EMAILJS — замени на свои ID с https://www.emailjs.com/
+// ============================================================
+var EMAILJS_PUBLIC_KEY = 'YOUR_PUBLIC_KEY';       // Account → API Keys → Public Key
+var EMAILJS_SERVICE_ID = 'YOUR_SERVICE_ID';       // Email Services → Service ID
+var EMAILJS_VERIFY_TEMPLATE = 'YOUR_VERIFY_TPL';  // шаблон подтверждения
+var EMAILJS_NOTIFY_TEMPLATE = 'YOUR_NOTIFY_TPL';  // шаблон уведомления
+
+try {
+    if (window.emailjs) emailjs.init(EMAILJS_PUBLIC_KEY);
+} catch (e) {}
+
 var MESSAGE_LIMIT = 100;
 var PIN_LIMIT = 5;
 var EDIT_TIME_LIMIT = 48 * 60 * 60 * 1000; // 48 часов
@@ -358,7 +370,21 @@ function linkEmail() {
     }).then(function() {
         $('email-verify-section').style.display = 'block';
         $('email-verified-badge').style.display = 'none';
-        setStatus(statusEl, '\u041A\u043E\u0434 \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043D\u0438\u044F: ' + code + ' (\u0432 \u0431\u0443\u0434\u0443\u0449\u0435\u043C \u0431\u0443\u0434\u0435\u0442 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u044F\u0442\u044C\u0441\u044F \u043D\u0430 \u043F\u043E\u0447\u0442\u0443)', 'waiting');
+        setStatus(statusEl, '\u041E\u0442\u043F\u0440\u0430\u0432\u043B\u044F\u0435\u043C \u043A\u043E\u0434...', 'waiting');
+
+        if (window.emailjs && EMAILJS_PUBLIC_KEY !== 'YOUR_PUBLIC_KEY') {
+            emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_VERIFY_TEMPLATE, {
+                to_email: email,
+                to_name: myUsername,
+                code: code
+            }).then(function() {
+                setStatus(statusEl, '\u041A\u043E\u0434 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D \u043D\u0430 ' + email, 'success');
+            }).catch(function(err) {
+                setStatus(statusEl, '\u041E\u0448\u0438\u0431\u043A\u0430 \u043E\u0442\u043F\u0440\u0430\u0432\u043A\u0438: ' + (err.text || err), 'error');
+            });
+        } else {
+            setStatus(statusEl, '\u041A\u043E\u0434: ' + code + ' (EmailJS \u043D\u0435 \u043D\u0430\u0441\u0442\u0440\u043E\u0435\u043D)', 'waiting');
+        }
     });
 }
 
@@ -381,6 +407,27 @@ function verifyEmail() {
 function toggleEmailNotif() {
     var checked = $('profile-email-notif').checked;
     db.ref('users/' + fbKey(myUsername) + '/emailNotifications').set(checked);
+}
+
+// ============================================================
+// Email-уведомления о новых сообщениях
+// ============================================================
+function sendEmailNotification(recipientUsername, senderName, messageText) {
+    if (!window.emailjs || EMAILJS_PUBLIC_KEY === 'YOUR_PUBLIC_KEY') return;
+
+    var key = fbKey(recipientUsername);
+    db.ref('users/' + key).once('value').then(function(s) {
+        var data = s.val();
+        if (!data || !data.emailVerified || !data.emailNotifications || !data.email) return;
+
+        var preview = messageText.length > 100 ? messageText.substring(0, 100) + '...' : messageText;
+        emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_NOTIFY_TEMPLATE, {
+            to_email: data.email,
+            to_name: recipientUsername,
+            from_name: senderName,
+            message: preview
+        }).catch(function() {});
+    });
 }
 
 // ============================================================
@@ -1143,11 +1190,15 @@ function sendMessage() {
         var peerKey = fbKey(currentPeerId);
         db.ref('user_chats/' + myKey + '/' + peerKey).update(updateData);
         db.ref('user_chats/' + peerKey + '/' + myKey).update(updateData);
+        sendEmailNotification(currentPeerId, myUsername, text);
     } else {
         db.ref('groups/' + currentChatId + '/members').once('value').then(function(s) {
             var members = Object.keys(s.val() || {});
             members.forEach(function(m) {
                 db.ref('user_chats/' + fbKey(m) + '/' + currentChatId).update(updateData);
+                if (m !== myUsername) {
+                    sendEmailNotification(m, myUsername, text);
+                }
             });
         });
     }
