@@ -23,7 +23,6 @@ try {
 var EMAILJS_PUBLIC_KEY = 'RIcm9uJNJbFjefEWS';
 var EMAILJS_SERVICE_ID = 'service_d62ejmd';
 var EMAILJS_VERIFY_TEMPLATE = 'template_nri6h8v';
-var EMAILJS_NOTIFY_TEMPLATE = 'template_4ybyipb';
 
 try { if (window.emailjs) emailjs.init(EMAILJS_PUBLIC_KEY); } catch (e) {}
 
@@ -34,8 +33,6 @@ var MESSAGE_LIMIT = 100;
 var PIN_LIMIT = 5;
 var EDIT_TIME_LIMIT = 48 * 60 * 60 * 1000;
 var DRAFT_DEBOUNCE = 1500;
-var EMAIL_READ_DELAY = 60 * 1000;       // 1 минута — ждём прочтения
-var EMAIL_COOLDOWN = 10 * 60 * 1000;    // 10 минут между письмами
 
 // ============================================================
 // Состояние
@@ -52,8 +49,6 @@ var currentFolder = '__all__';
 var allChatsData = {};
 var draftTimer = null;
 var currentQuery = null;
-var pendingEmailTimers = {};    // msgKey → timer для отложенной отправки
-var emailCooldowns = {};        // username → timestamp последнего письма
 
 // ============================================================
 // DOM
@@ -392,8 +387,6 @@ function openProfile() {
     db.ref('users/' + key).once('value').then(function(s) {
         var data = s.val() || {};
         $('profile-display-name').value = data.displayName || '';
-        $('profile-email-notif').checked = !!data.emailNotifications;
-
         if (data.email && data.emailVerified) {
             $('email-linked-section').style.display = 'block';
             $('email-unlinked-section').style.display = 'none';
@@ -485,76 +478,13 @@ function verifyEmail() {
 
 function unlinkEmail() {
     var key = fbKey(myUsername);
-    db.ref('users/' + key).update({ email: null, emailVerified: false, emailCode: null, emailNotifications: false }).then(function() {
+    db.ref('users/' + key).update({ email: null, emailVerified: false, emailCode: null }).then(function() {
         $('email-linked-section').style.display = 'none';
         $('email-unlinked-section').style.display = 'block';
         $('profile-email').value = '';
-        $('profile-email-notif').checked = false;
         $('email-verify-section').style.display = 'none';
         setStatus($('profile-email-status'), '\u041F\u043E\u0447\u0442\u0430 \u043E\u0442\u0432\u044F\u0437\u0430\u043D\u0430', 'success');
     });
-}
-
-function toggleEmailNotif() {
-    db.ref('users/' + fbKey(myUsername) + '/emailNotifications').set($('profile-email-notif').checked);
-}
-
-// ============================================================
-// Email-уведомления с задержкой и кулдауном
-// ============================================================
-function scheduleEmailNotification(msgKey, recipientUsername, senderName, messageText, chatId) {
-    if (!window.emailjs) return;
-
-    // Проверяем кулдаун (10 мин между письмами для одного получателя)
-    var now = Date.now();
-    if (emailCooldowns[recipientUsername] && now - emailCooldowns[recipientUsername] < EMAIL_COOLDOWN) {
-        return;
-    }
-
-    // Ставим таймер на 1 минуту — если за это время получатель прочитает, отменяем
-    var timerKey = chatId + '_' + msgKey;
-    pendingEmailTimers[timerKey] = setTimeout(function() {
-        delete pendingEmailTimers[timerKey];
-
-        // Проверяем — прочитано ли сообщение
-        db.ref('chats/' + chatId + '/messages/' + msgKey + '/readBy/' + fbKey(recipientUsername)).once('value').then(function(s) {
-            if (s.exists()) return; // прочитано — не шлём
-
-            // Проверяем кулдаун ещё раз
-            var now2 = Date.now();
-            if (emailCooldowns[recipientUsername] && now2 - emailCooldowns[recipientUsername] < EMAIL_COOLDOWN) return;
-
-            // Проверяем настройки получателя
-            db.ref('users/' + fbKey(recipientUsername)).once('value').then(function(us) {
-                var data = us.val();
-                if (!data || !data.email || !data.emailVerified || !data.emailNotifications) return;
-
-                var preview = messageText.length > 100 ? messageText.substring(0, 100) + '...' : messageText;
-                emailCooldowns[recipientUsername] = now2;
-
-                emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_NOTIFY_TEMPLATE, {
-                    to_email: data.email,
-                    to_name: data.displayName || recipientUsername,
-                    from_name: senderName,
-                    message: preview
-                }).then(function() {
-                    console.log('[email] sent to ' + recipientUsername);
-                }).catch(function(err) {
-                    console.error('[email] error:', err);
-                    delete emailCooldowns[recipientUsername];
-                });
-            });
-        });
-    }, EMAIL_READ_DELAY);
-}
-
-// Отменяем таймер если сообщение прочитано до истечения минуты
-function cancelPendingEmail(chatId, msgKey) {
-    var timerKey = chatId + '_' + msgKey;
-    if (pendingEmailTimers[timerKey]) {
-        clearTimeout(pendingEmailTimers[timerKey]);
-        delete pendingEmailTimers[timerKey];
-    }
 }
 
 // ============================================================
@@ -972,7 +902,6 @@ function loadMessages(chatId) {
             markMessageDelivered(chatId, s.key);
             if (document.visibilityState === 'visible') {
                 db.ref('chats/' + chatId + '/messages/' + s.key + '/readBy/' + fbKey(myUsername)).set(firebase.database.ServerValue.TIMESTAMP);
-                cancelPendingEmail(chatId, s.key);
             }
         }
     });
@@ -1249,12 +1178,10 @@ function sendMessage() {
     if (chatType === 'dm') {
         db.ref('user_chats/' + fbKey(myUsername) + '/' + fbKey(peerId)).update(updateData);
         db.ref('user_chats/' + fbKey(peerId) + '/' + fbKey(myUsername)).update(updateData);
-        scheduleEmailNotification(msgKey, peerId, myUsername, text, chatId);
     } else {
         db.ref('groups/' + chatId + '/members').once('value').then(function(s) {
             Object.keys(s.val() || {}).forEach(function(m) {
                 db.ref('user_chats/' + fbKey(m) + '/' + chatId).update(updateData);
-                if (m !== myUsername) scheduleEmailNotification(msgKey, m, myUsername, text, chatId);
             });
         });
     }
@@ -1446,7 +1373,6 @@ function setupEvents() {
     $('btn-verify-email').addEventListener('click', verifyEmail);
     $('btn-unlink-email').addEventListener('click', unlinkEmail);
     $('btn-forgot-pass').addEventListener('click', forgotPassword);
-    $('profile-email-notif').addEventListener('change', toggleEmailNotif);
 
     $('btn-logout').addEventListener('click', function() {
         localStorage.removeItem('berezka_user'); myUsername = null; currentChatId = null;
