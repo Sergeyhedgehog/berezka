@@ -156,7 +156,7 @@ html, body {
 
 /* === Хедер === */
 .header {
-    background: linear-gradient(135deg, #2e7d32 0%, #388e3c 100%);
+    background: var(--green-dark);
     color: var(--white);
     padding: 12px 16px;
     padding-top: calc(12px + env(safe-area-inset-top, 0px));
@@ -238,7 +238,7 @@ html, body {
     display: flex;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
-    background: linear-gradient(180deg, #2e7d32 0%, #256b29 100%);
+    background: var(--green-dark);
     padding: 0 12px 10px;
     gap: 6px;
     flex-shrink: 0;

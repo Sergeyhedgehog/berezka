@@ -274,27 +274,104 @@ function setupAuth() {
 
 function handleAuth() {
     if (!db) { authError.textContent = '\u041D\u0435\u0442 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u044F'; return; }
-    var username = sanitize(authUsername.value);
+    var input = authUsername.value.trim();
     var password = authPassword.value.trim();
-    if (!username || username.length < 2) { authError.textContent = '\u041B\u043E\u0433\u0438\u043D \u2014 \u043C\u0438\u043D\u0438\u043C\u0443\u043C 2 \u0441\u0438\u043C\u0432\u043E\u043B\u0430'; return; }
-    if (!password || password.length < 4) { authError.textContent = '\u041F\u0430\u0440\u043E\u043B\u044C \u2014 \u043C\u0438\u043D\u0438\u043C\u0443\u043C 4 \u0441\u0438\u043C\u0432\u043E\u043B\u0430'; return; }
+    var isEmail = input.indexOf('@') > 0;
 
-    var key = fbKey(username);
-    sha256('berezka-pass-' + password).then(function(passHash) {
-        if (authMode === 'register') {
+    if (authMode === 'register') {
+        var username = sanitize(input);
+        if (!username || username.length < 2) { authError.textContent = '\u041B\u043E\u0433\u0438\u043D \u2014 \u043C\u0438\u043D\u0438\u043C\u0443\u043C 2 \u0441\u0438\u043C\u0432\u043E\u043B\u0430'; return; }
+        if (!password || password.length < 4) { authError.textContent = '\u041F\u0430\u0440\u043E\u043B\u044C \u2014 \u043C\u0438\u043D\u0438\u043C\u0443\u043C 4 \u0441\u0438\u043C\u0432\u043E\u043B\u0430'; return; }
+        var key = fbKey(username);
+        sha256('berezka-pass-' + password).then(function(passHash) {
             db.ref('users/' + key).once('value').then(function(s) {
                 if (s.exists()) { authError.textContent = '\u041B\u043E\u0433\u0438\u043D \u0437\u0430\u043D\u044F\u0442'; return; }
                 db.ref('users/' + key).set({ username: username, passHash: passHash, createdAt: firebase.database.ServerValue.TIMESTAMP })
                 .then(function() { localStorage.setItem('berezka_user', username); myUsername = username; startApp(); })
                 .catch(function(e) { authError.textContent = e.message; });
             });
+        });
+    } else {
+        if (!input) { authError.textContent = '\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u043B\u043E\u0433\u0438\u043D \u0438\u043B\u0438 email'; return; }
+        if (!password || password.length < 4) { authError.textContent = '\u041F\u0430\u0440\u043E\u043B\u044C \u2014 \u043C\u0438\u043D\u0438\u043C\u0443\u043C 4 \u0441\u0438\u043C\u0432\u043E\u043B\u0430'; return; }
+
+        if (isEmail) {
+            // Вход по email — ищем пользователя с таким email
+            findUserByEmail(input).then(function(userData) {
+                if (!userData) { authError.textContent = '\u041F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u0442\u0435\u043B\u044C \u0441 \u0442\u0430\u043A\u0438\u043C email \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D'; return; }
+                sha256('berezka-pass-' + password).then(function(passHash) {
+                    if (userData.passHash !== passHash) { authError.textContent = '\u041D\u0435\u0432\u0435\u0440\u043D\u044B\u0439 \u043F\u0430\u0440\u043E\u043B\u044C'; return; }
+                    localStorage.setItem('berezka_user', userData.username); myUsername = userData.username; startApp();
+                });
+            });
         } else {
-            db.ref('users/' + key).once('value').then(function(s) {
-                if (!s.exists()) { authError.textContent = '\u041F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u0442\u0435\u043B\u044C \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D'; return; }
-                if (s.val().passHash !== passHash) { authError.textContent = '\u041D\u0435\u0432\u0435\u0440\u043D\u044B\u0439 \u043F\u0430\u0440\u043E\u043B\u044C'; return; }
-                localStorage.setItem('berezka_user', username); myUsername = username; startApp();
-            }).catch(function(e) { authError.textContent = e.message; });
+            var username = sanitize(input);
+            var key = fbKey(username);
+            sha256('berezka-pass-' + password).then(function(passHash) {
+                db.ref('users/' + key).once('value').then(function(s) {
+                    if (!s.exists()) { authError.textContent = '\u041F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u0442\u0435\u043B\u044C \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D'; return; }
+                    if (s.val().passHash !== passHash) { authError.textContent = '\u041D\u0435\u0432\u0435\u0440\u043D\u044B\u0439 \u043F\u0430\u0440\u043E\u043B\u044C'; return; }
+                    localStorage.setItem('berezka_user', username); myUsername = username; startApp();
+                }).catch(function(e) { authError.textContent = e.message; });
+            });
         }
+    }
+}
+
+function findUserByEmail(email) {
+    return db.ref('users').orderByChild('email').equalTo(email.toLowerCase().trim()).once('value').then(function(s) {
+        var result = null;
+        s.forEach(function(child) {
+            var data = child.val();
+            if (data.emailVerified) result = data;
+        });
+        return result;
+    });
+}
+
+function forgotPassword() {
+    var input = authUsername.value.trim();
+    if (!input) { authError.textContent = '\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u043B\u043E\u0433\u0438\u043D \u0438\u043B\u0438 email \u0432 \u043F\u043E\u043B\u0435 \u0432\u044B\u0448\u0435'; return; }
+
+    var isEmail = input.indexOf('@') > 0;
+
+    var findUser;
+    if (isEmail) {
+        findUser = findUserByEmail(input);
+    } else {
+        var username = sanitize(input);
+        findUser = db.ref('users/' + fbKey(username)).once('value').then(function(s) {
+            return s.exists() ? s.val() : null;
+        });
+    }
+
+    findUser.then(function(userData) {
+        if (!userData) { authError.textContent = '\u041F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u0442\u0435\u043B\u044C \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D'; return; }
+        if (!userData.email || !userData.emailVerified) {
+            authError.textContent = '\u041A \u044D\u0442\u043E\u043C\u0443 \u0430\u043A\u043A\u0430\u0443\u043D\u0442\u0443 \u043D\u0435 \u043F\u0440\u0438\u0432\u044F\u0437\u0430\u043D\u0430 \u043F\u043E\u0447\u0442\u0430'; return;
+        }
+
+        // Генерируем новый пароль
+        var chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+        var newPass = '';
+        for (var i = 0; i < 8; i++) newPass += chars[Math.floor(Math.random() * chars.length)];
+
+        sha256('berezka-pass-' + newPass).then(function(newHash) {
+            db.ref('users/' + fbKey(userData.username) + '/passHash').set(newHash).then(function() {
+                if (window.emailjs) {
+                    emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_VERIFY_TEMPLATE, {
+                        to_email: userData.email,
+                        to_name: userData.displayName || userData.username,
+                        code: '\u041D\u043E\u0432\u044B\u0439 \u043F\u0430\u0440\u043E\u043B\u044C: ' + newPass
+                    }).then(function() {
+                        authError.textContent = '';
+                        setStatus(authError, '\u041D\u043E\u0432\u044B\u0439 \u043F\u0430\u0440\u043E\u043B\u044C \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D \u043D\u0430 ' + userData.email, 'success');
+                    }).catch(function(err) {
+                        authError.textContent = '\u041E\u0448\u0438\u0431\u043A\u0430 \u043E\u0442\u043F\u0440\u0430\u0432\u043A\u0438: ' + (err.text || err);
+                    });
+                }
+            });
+        });
     });
 }
 
@@ -315,9 +392,17 @@ function openProfile() {
     db.ref('users/' + key).once('value').then(function(s) {
         var data = s.val() || {};
         $('profile-display-name').value = data.displayName || '';
-        $('profile-email').value = data.email || '';
         $('profile-email-notif').checked = !!data.emailNotifications;
-        $('email-verified-badge').style.display = data.emailVerified ? 'block' : 'none';
+
+        if (data.email && data.emailVerified) {
+            $('email-linked-section').style.display = 'block';
+            $('email-unlinked-section').style.display = 'none';
+            $('profile-email-display').textContent = data.email;
+        } else {
+            $('email-linked-section').style.display = 'none';
+            $('email-unlinked-section').style.display = 'block';
+            $('profile-email').value = data.email || '';
+        }
     });
     showScreen(screenProfile);
 }
@@ -385,13 +470,28 @@ function verifyEmail() {
     if (!code) { setStatus(statusEl, '\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u043A\u043E\u0434', 'error'); return; }
 
     var key = fbKey(myUsername);
-    db.ref('users/' + key + '/emailCode').once('value').then(function(s) {
-        if (s.val() !== code) { setStatus(statusEl, '\u041D\u0435\u0432\u0435\u0440\u043D\u044B\u0439 \u043A\u043E\u0434', 'error'); return; }
+    db.ref('users/' + key).once('value').then(function(s) {
+        var data = s.val() || {};
+        if (data.emailCode !== code) { setStatus(statusEl, '\u041D\u0435\u0432\u0435\u0440\u043D\u044B\u0439 \u043A\u043E\u0434', 'error'); return; }
         db.ref('users/' + key).update({ emailVerified: true, emailCode: null }).then(function() {
             setStatus(statusEl, '\u041F\u043E\u0447\u0442\u0430 \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043D\u0430!', 'success');
             $('email-verify-section').style.display = 'none';
-            $('email-verified-badge').style.display = 'block';
+            $('email-linked-section').style.display = 'block';
+            $('email-unlinked-section').style.display = 'none';
+            $('profile-email-display').textContent = data.email;
         });
+    });
+}
+
+function unlinkEmail() {
+    var key = fbKey(myUsername);
+    db.ref('users/' + key).update({ email: null, emailVerified: false, emailCode: null, emailNotifications: false }).then(function() {
+        $('email-linked-section').style.display = 'none';
+        $('email-unlinked-section').style.display = 'block';
+        $('profile-email').value = '';
+        $('profile-email-notif').checked = false;
+        $('email-verify-section').style.display = 'none';
+        setStatus($('profile-email-status'), '\u041F\u043E\u0447\u0442\u0430 \u043E\u0442\u0432\u044F\u0437\u0430\u043D\u0430', 'success');
     });
 }
 
@@ -1344,6 +1444,8 @@ function setupEvents() {
     $('btn-change-pass').addEventListener('click', changePassword);
     $('btn-link-email').addEventListener('click', linkEmail);
     $('btn-verify-email').addEventListener('click', verifyEmail);
+    $('btn-unlink-email').addEventListener('click', unlinkEmail);
+    $('btn-forgot-pass').addEventListener('click', forgotPassword);
     $('profile-email-notif').addEventListener('change', toggleEmailNotif);
 
     $('btn-logout').addEventListener('click', function() {

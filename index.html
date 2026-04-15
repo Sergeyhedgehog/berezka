@@ -9,7 +9,7 @@
     <title>&#x0411;&#x0435;&#x0440;&#x0451;&#x0437;&#x043A;&#x0430;</title>
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icon-192.png">
-    <link rel="stylesheet" href="style.css?v=6" charset="utf-8">
+    <link rel="stylesheet" href="style.css?v=7" charset="utf-8">
 </head>
 <body>
 
@@ -34,9 +34,10 @@
                     <button class="auth-tab" data-tab="register">&#x0420;&#x0435;&#x0433;&#x0438;&#x0441;&#x0442;&#x0440;&#x0430;&#x0446;&#x0438;&#x044F;</button>
                 </div>
                 <div class="auth-form">
-                    <input type="text" id="auth-username" placeholder="&#x041B;&#x043E;&#x0433;&#x0438;&#x043D;" autocomplete="username" autocapitalize="off" spellcheck="false">
+                    <input type="text" id="auth-username" placeholder="&#x041B;&#x043E;&#x0433;&#x0438;&#x043D; &#x0438;&#x043B;&#x0438; email" autocomplete="username" autocapitalize="off" spellcheck="false">
                     <input type="password" id="auth-password" placeholder="&#x041F;&#x0430;&#x0440;&#x043E;&#x043B;&#x044C;" autocomplete="current-password">
                     <button id="btn-auth" class="btn-primary btn-full">&#x0412;&#x043E;&#x0439;&#x0442;&#x0438;</button>
+                    <button id="btn-forgot-pass" class="btn-icon" style="font-size:13px;color:var(--green-dark);width:100%;text-align:center;padding:4px 0">&#x0417;&#x0430;&#x0431;&#x044B;&#x043B; &#x043F;&#x0430;&#x0440;&#x043E;&#x043B;&#x044C;?</button>
                     <p id="auth-error" class="status error"></p>
                 </div>
             </div>
@@ -108,9 +109,15 @@
             </div>
             <div class="form-section">
                 <p class="label">Email</p>
-                <div id="email-verified-badge" class="verified-badge" style="display:none">&#x2705; &#x041F;&#x043E;&#x0434;&#x0442;&#x0432;&#x0435;&#x0440;&#x0436;&#x0434;&#x0435;&#x043D;&#x043E;</div>
-                <input type="email" id="profile-email" placeholder="example@mail.com">
-                <button id="btn-link-email" class="btn-primary btn-full">&#x041F;&#x0440;&#x0438;&#x0432;&#x044F;&#x0437;&#x0430;&#x0442;&#x044C; &#x043F;&#x043E;&#x0447;&#x0442;&#x0443;</button>
+                <div id="email-linked-section" style="display:none">
+                    <p id="profile-email-display" class="profile-value" style="margin-bottom:6px"></p>
+                    <div id="email-verified-badge" class="verified-badge">&#x2705; &#x041F;&#x043E;&#x0447;&#x0442;&#x0430; &#x043F;&#x043E;&#x0434;&#x0442;&#x0432;&#x0435;&#x0440;&#x0436;&#x0434;&#x0435;&#x043D;&#x0430;</div>
+                    <button id="btn-unlink-email" class="btn-danger-outline" style="margin-top:8px">&#x041E;&#x0442;&#x0432;&#x044F;&#x0437;&#x0430;&#x0442;&#x044C; &#x043F;&#x043E;&#x0447;&#x0442;&#x0443;</button>
+                </div>
+                <div id="email-unlinked-section">
+                    <input type="email" id="profile-email" placeholder="example@mail.com">
+                    <button id="btn-link-email" class="btn-primary btn-full">&#x041F;&#x0440;&#x0438;&#x0432;&#x044F;&#x0437;&#x0430;&#x0442;&#x044C; &#x043F;&#x043E;&#x0447;&#x0442;&#x0443;</button>
+                </div>
                 <div id="email-verify-section" style="display:none">
                     <p class="label" style="margin-top:10px">&#x041A;&#x043E;&#x0434; &#x043F;&#x043E;&#x0434;&#x0442;&#x0432;&#x0435;&#x0440;&#x0436;&#x0434;&#x0435;&#x043D;&#x0438;&#x044F; &#x043E;&#x0442;&#x043F;&#x0440;&#x0430;&#x0432;&#x043B;&#x0435;&#x043D; &#x043D;&#x0430; &#x043F;&#x043E;&#x0447;&#x0442;&#x0443;</p>
                     <input type="text" id="profile-email-code" placeholder="6-&#x0437;&#x043D;&#x0430;&#x0447;&#x043D;&#x044B;&#x0439; &#x043A;&#x043E;&#x0434;" maxlength="6" inputmode="numeric">
@@ -243,6 +250,6 @@
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js" charset="utf-8"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js" charset="utf-8"></script>
-    <script src="app.js?v=7" charset="utf-8"></script>
+    <script src="app.js?v=8" charset="utf-8"></script>
 </body>
 </html>
