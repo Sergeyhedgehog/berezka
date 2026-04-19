@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#2e7d32">
+    <title>&#x0411;&#x0435;&#x0440;&#x0451;&#x0437;&#x043A;&#x0430;</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="stylesheet" href="style.css?v=7" charset="utf-8">
+</head>
+<body>
+
+    <!-- Экран загрузки -->
+    <div id="screen-loading" class="screen active">
+        <div class="center-container">
+            <div class="logo">&#x1F33F;</div>
+            <h1>&#x0411;&#x0435;&#x0440;&#x0451;&#x0437;&#x043A;&#x0430;</h1>
+            <p id="loading-text">&#x0417;&#x0430;&#x0433;&#x0440;&#x0443;&#x0437;&#x043A;&#x0430;...</p>
+            <div class="spinner"></div>
+        </div>
+    </div>
+
+    <!-- Экран авторизации -->
+    <div id="screen-auth" class="screen">
+        <div class="center-container auth-center">
+            <div class="logo">&#x1F33F;</div>
+            <h1>&#x0411;&#x0435;&#x0440;&#x0451;&#x0437;&#x043A;&#x0430;</h1>
+            <div class="auth-card">
+                <div class="auth-tabs">
+                    <button class="auth-tab active" data-tab="login">&#x0412;&#x0445;&#x043E;&#x0434;</button>
+                    <button class="auth-tab" data-tab="register">&#x0420;&#x0435;&#x0433;&#x0438;&#x0441;&#x0442;&#x0440;&#x0430;&#x0446;&#x0438;&#x044F;</button>
+                </div>
+                <div class="auth-form">
+                    <input type="text" id="auth-username" placeholder="&#x041B;&#x043E;&#x0433;&#x0438;&#x043D; &#x0438;&#x043B;&#x0438; email" autocomplete="username" autocapitalize="off" spellcheck="false">
+                    <input type="password" id="auth-password" placeholder="&#x041F;&#x0430;&#x0440;&#x043E;&#x043B;&#x044C;" autocomplete="current-password">
+                    <button id="btn-auth" class="btn-primary btn-full">&#x0412;&#x043E;&#x0439;&#x0442;&#x0438;</button>
+                    <button id="btn-forgot-pass" class="btn-icon" style="font-size:13px;color:var(--green-dark);width:100%;text-align:center;padding:4px 0">&#x0417;&#x0430;&#x0431;&#x044B;&#x043B; &#x043F;&#x0430;&#x0440;&#x043E;&#x043B;&#x044C;?</button>
+                    <p id="auth-error" class="status error"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Главный экран -->
+    <div id="screen-main" class="screen">
+        <div class="header">
+            <h1>&#x1F33F; &#x0411;&#x0435;&#x0440;&#x0451;&#x0437;&#x043A;&#x0430;</h1>
+            <button id="btn-profile" class="btn-icon header-btn" title="&#x041F;&#x0440;&#x043E;&#x0444;&#x0438;&#x043B;&#x044C;">&#x1F464;</button>
+            <button id="btn-logout" class="btn-icon header-btn" title="&#x0412;&#x044B;&#x0439;&#x0442;&#x0438;">&#x1F6AA;</button>
+        </div>
+        <div id="folder-tabs" class="folder-tabs">
+            <div class="folder-tab active" data-folder="__all__">&#x0412;&#x0441;&#x0435;</div>
+            <div class="folder-tab folder-tab-add" id="btn-add-folder">+</div>
+        </div>
+        <div class="main-content">
+            <div class="your-id-section">
+                <p class="label">&#x0412;&#x0430;&#x0448; &#x043B;&#x043E;&#x0433;&#x0438;&#x043D;:</p>
+                <div class="id-display">
+                    <span id="my-id">&#x2014;&#x2014;</span>
+                    <button id="btn-copy" class="btn-icon" title="&#x0421;&#x043A;&#x043E;&#x043F;&#x0438;&#x0440;&#x043E;&#x0432;&#x0430;&#x0442;&#x044C;">&#x1F4CB;</button>
+                </div>
+            </div>
+
+            <div class="connect-section">
+                <p class="label">&#x041D;&#x0430;&#x043F;&#x0438;&#x0441;&#x0430;&#x0442;&#x044C; &#x043F;&#x043E;&#x043B;&#x044C;&#x0437;&#x043E;&#x0432;&#x0430;&#x0442;&#x0435;&#x043B;&#x044E;:</p>
+                <div class="input-row">
+                    <input type="text" id="peer-id-input" placeholder="&#x041B;&#x043E;&#x0433;&#x0438;&#x043D;" autocomplete="off" autocapitalize="off" spellcheck="false">
+                    <button id="btn-connect" class="btn-primary">&#x041D;&#x0430;&#x043F;&#x0438;&#x0441;&#x0430;&#x0442;&#x044C;</button>
+                </div>
+                <p id="connect-status" class="status"></p>
+            </div>
+
+            <div class="action-row">
+                <button id="btn-new-group" class="btn-secondary btn-full">+ &#x0421;&#x043E;&#x0437;&#x0434;&#x0430;&#x0442;&#x044C; &#x0433;&#x0440;&#x0443;&#x043F;&#x043F;&#x0443;</button>
+            </div>
+
+            <div id="chats-list" class="chats-section">
+                <p class="label">&#x0427;&#x0430;&#x0442;&#x044B;:</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Экран профиля -->
+    <div id="screen-profile" class="screen">
+        <div class="header">
+            <button id="btn-back-profile" class="btn-icon header-btn">&#8592;</button>
+            <h1>&#x041F;&#x0440;&#x043E;&#x0444;&#x0438;&#x043B;&#x044C;</h1>
+        </div>
+        <div class="main-content">
+            <div class="form-section">
+                <p class="label">&#x041B;&#x043E;&#x0433;&#x0438;&#x043D;</p>
+                <p id="profile-username" class="profile-value"></p>
+            </div>
+            <div class="form-section">
+                <p class="label">&#x041E;&#x0442;&#x043E;&#x0431;&#x0440;&#x0430;&#x0436;&#x0430;&#x0435;&#x043C;&#x043E;&#x0435; &#x0438;&#x043C;&#x044F;</p>
+                <input type="text" id="profile-display-name" placeholder="&#x0418;&#x043C;&#x044F;" maxlength="30">
+                <button id="btn-save-name" class="btn-primary btn-full">&#x0421;&#x043E;&#x0445;&#x0440;&#x0430;&#x043D;&#x0438;&#x0442;&#x044C; &#x0438;&#x043C;&#x044F;</button>
+                <p id="profile-name-status" class="status"></p>
+            </div>
+            <div class="form-section">
+                <p class="label">&#x0421;&#x043C;&#x0435;&#x043D;&#x0438;&#x0442;&#x044C; &#x043F;&#x0430;&#x0440;&#x043E;&#x043B;&#x044C;</p>
+                <input type="password" id="profile-old-pass" placeholder="&#x0422;&#x0435;&#x043A;&#x0443;&#x0449;&#x0438;&#x0439; &#x043F;&#x0430;&#x0440;&#x043E;&#x043B;&#x044C;">
+                <input type="password" id="profile-new-pass" placeholder="&#x041D;&#x043E;&#x0432;&#x044B;&#x0439; &#x043F;&#x0430;&#x0440;&#x043E;&#x043B;&#x044C;">
+                <button id="btn-change-pass" class="btn-primary btn-full">&#x0421;&#x043C;&#x0435;&#x043D;&#x0438;&#x0442;&#x044C; &#x043F;&#x0430;&#x0440;&#x043E;&#x043B;&#x044C;</button>
+                <p id="profile-pass-status" class="status"></p>
+            </div>
+            <div class="form-section">
+                <p class="label">Email</p>
+                <div id="email-linked-section" style="display:none">
+                    <p id="profile-email-display" class="profile-value" style="margin-bottom:6px"></p>
+                    <div id="email-verified-badge" class="verified-badge">&#x2705; &#x041F;&#x043E;&#x0447;&#x0442;&#x0430; &#x043F;&#x043E;&#x0434;&#x0442;&#x0432;&#x0435;&#x0440;&#x0436;&#x0434;&#x0435;&#x043D;&#x0430;</div>
+                    <button id="btn-unlink-email" class="btn-danger-outline" style="margin-top:8px">&#x041E;&#x0442;&#x0432;&#x044F;&#x0437;&#x0430;&#x0442;&#x044C; &#x043F;&#x043E;&#x0447;&#x0442;&#x0443;</button>
+                </div>
+                <div id="email-unlinked-section">
+                    <input type="email" id="profile-email" placeholder="example@mail.com">
+                    <button id="btn-link-email" class="btn-primary btn-full">&#x041F;&#x0440;&#x0438;&#x0432;&#x044F;&#x0437;&#x0430;&#x0442;&#x044C; &#x043F;&#x043E;&#x0447;&#x0442;&#x0443;</button>
+                </div>
+                <div id="email-verify-section" style="display:none">
+                    <p class="label" style="margin-top:10px">&#x041A;&#x043E;&#x0434; &#x043F;&#x043E;&#x0434;&#x0442;&#x0432;&#x0435;&#x0440;&#x0436;&#x0434;&#x0435;&#x043D;&#x0438;&#x044F; &#x043E;&#x0442;&#x043F;&#x0440;&#x0430;&#x0432;&#x043B;&#x0435;&#x043D; &#x043D;&#x0430; &#x043F;&#x043E;&#x0447;&#x0442;&#x0443;</p>
+                    <input type="text" id="profile-email-code" placeholder="6-&#x0437;&#x043D;&#x0430;&#x0447;&#x043D;&#x044B;&#x0439; &#x043A;&#x043E;&#x0434;" maxlength="6" inputmode="numeric">
+                    <button id="btn-verify-email" class="btn-primary btn-full">&#x041F;&#x043E;&#x0434;&#x0442;&#x0432;&#x0435;&#x0440;&#x0434;&#x0438;&#x0442;&#x044C;</button>
+                </div>
+                <p id="profile-email-status" class="status"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Экран создания группы -->
+    <div id="screen-create-group" class="screen">
+        <div class="header">
+            <button id="btn-back-create" class="btn-icon header-btn">&#8592;</button>
+            <h1>&#x041D;&#x043E;&#x0432;&#x0430;&#x044F; &#x0433;&#x0440;&#x0443;&#x043F;&#x043F;&#x0430;</h1>
+        </div>
+        <div class="main-content">
+            <div class="form-section">
+                <input type="text" id="group-name-input" placeholder="&#x041D;&#x0430;&#x0437;&#x0432;&#x0430;&#x043D;&#x0438;&#x0435; &#x0433;&#x0440;&#x0443;&#x043F;&#x043F;&#x044B;" maxlength="30">
+                <textarea id="group-desc-input" placeholder="&#x041E;&#x043F;&#x0438;&#x0441;&#x0430;&#x043D;&#x0438;&#x0435; (&#x043D;&#x0435;&#x043E;&#x0431;&#x044F;&#x0437;&#x0430;&#x0442;&#x0435;&#x043B;&#x044C;&#x043D;&#x043E;)" maxlength="200" rows="3"></textarea>
+            </div>
+            <div class="form-section">
+                <p class="label">&#x0414;&#x043E;&#x0431;&#x0430;&#x0432;&#x0438;&#x0442;&#x044C; &#x0443;&#x0447;&#x0430;&#x0441;&#x0442;&#x043D;&#x0438;&#x043A;&#x043E;&#x0432;:</p>
+                <div class="input-row">
+                    <input type="text" id="group-member-input" placeholder="&#x041B;&#x043E;&#x0433;&#x0438;&#x043D;" autocapitalize="off" spellcheck="false">
+                    <button id="btn-add-member" class="btn-primary">+</button>
+                </div>
+                <p id="group-member-status" class="status"></p>
+                <div id="members-list" class="members-list"></div>
+            </div>
+            <button id="btn-create-group" class="btn-primary btn-full">&#x0421;&#x043E;&#x0437;&#x0434;&#x0430;&#x0442;&#x044C; &#x0433;&#x0440;&#x0443;&#x043F;&#x043F;&#x0443;</button>
+            <p id="create-group-error" class="status error"></p>
+        </div>
+    </div>
+
+    <!-- Экран чата -->
+    <div id="screen-chat" class="screen">
+        <div class="header chat-header">
+            <button id="btn-back" class="btn-icon header-btn">&#8592;</button>
+            <div id="chat-header-info" class="chat-header-info">
+                <h1 id="chat-peer-name">&#x2014;&#x2014;</h1>
+                <p id="chat-subtitle" class="chat-subtitle"></p>
+            </div>
+            <button id="btn-search-chat" class="btn-icon header-btn">&#x1F50D;</button>
+            <button id="btn-chat-menu" class="btn-icon header-btn">&#8942;</button>
+        </div>
+        <!-- Поиск по чату -->
+        <div id="search-bar" class="search-bar" style="display:none">
+            <div class="search-bar-row">
+                <input type="text" id="search-input" placeholder="&#x041F;&#x043E;&#x0438;&#x0441;&#x043A;..." autocomplete="off">
+                <select id="search-sender-filter">
+                    <option value="">&#x0412;&#x0441;&#x0435;</option>
+                </select>
+                <button id="btn-close-search" class="btn-icon">&#x2715;</button>
+            </div>
+            <div id="search-results" class="search-results"></div>
+        </div>
+        <!-- Закреплённые сообщения -->
+        <div id="pinned-bar" class="pinned-bar" style="display:none">
+            <div class="pinned-bar-header">
+                <span>&#x1F4CC; &#x0417;&#x0430;&#x043A;&#x0440;&#x0435;&#x043F;&#x043B;&#x0435;&#x043D;&#x043E;</span>
+                <button id="btn-toggle-pinned" class="btn-icon pinned-toggle">&#x25BC;</button>
+            </div>
+            <div id="pinned-messages" class="pinned-messages"></div>
+        </div>
+        <div id="messages" class="messages"></div>
+        <div class="chat-input">
+            <div id="draft-indicator" class="draft-indicator" style="display:none">&#x270F; &#x0427;&#x0435;&#x0440;&#x043D;&#x043E;&#x0432;&#x0438;&#x043A;</div>
+            <input type="text" id="message-input" placeholder="&#x0421;&#x043E;&#x043E;&#x0431;&#x0449;&#x0435;&#x043D;&#x0438;&#x0435;..." autocomplete="off">
+            <button id="btn-send" class="btn-primary">&#8594;</button>
+        </div>
+    </div>
+
+    <!-- Экран информации о группе -->
+    <div id="screen-group-info" class="screen">
+        <div class="header">
+            <button id="btn-back-info" class="btn-icon header-btn">&#8592;</button>
+            <h1>&#x041E; &#x0433;&#x0440;&#x0443;&#x043F;&#x043F;&#x0435;</h1>
+        </div>
+        <div class="main-content">
+            <div class="form-section group-info-header">
+                <h2 id="info-group-name"></h2>
+                <p id="info-group-desc" class="text-light"></p>
+                <p id="info-group-creator" class="text-light small"></p>
+            </div>
+            <div class="form-section">
+                <p class="label" id="info-members-label">&#x0423;&#x0447;&#x0430;&#x0441;&#x0442;&#x043D;&#x0438;&#x043A;&#x0438;:</p>
+                <div id="info-members-list" class="members-list"></div>
+            </div>
+            <div id="info-add-member-section" class="form-section" style="display:none">
+                <p class="label">&#x0414;&#x043E;&#x0431;&#x0430;&#x0432;&#x0438;&#x0442;&#x044C; &#x0443;&#x0447;&#x0430;&#x0441;&#x0442;&#x043D;&#x0438;&#x043A;&#x0430;:</p>
+                <div class="input-row">
+                    <input type="text" id="info-member-input" placeholder="&#x041B;&#x043E;&#x0433;&#x0438;&#x043D;" autocapitalize="off" spellcheck="false">
+                    <button id="btn-info-add-member" class="btn-primary">+</button>
+                </div>
+                <p id="info-member-status" class="status"></p>
+            </div>
+            <div id="info-actions" class="info-actions"></div>
+        </div>
+    </div>
+
+    <!-- Модальное окно -->
+    <div id="modal-overlay" class="modal-overlay" style="display:none">
+        <div class="modal-card">
+            <h3 id="modal-title"></h3>
+            <div id="modal-body"></div>
+        </div>
+    </div>
+
+    <!-- Контекстное меню сообщения -->
+    <div id="msg-context-overlay" class="msg-context-overlay" style="display:none">
+        <div class="msg-context-card">
+            <div id="msg-context-body"></div>
+        </div>
+    </div>
+
+    <!-- EmailJS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js" charset="utf-8"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js" charset="utf-8"></script>
+    <script src="app.js?v=9" charset="utf-8"></script>
+</body>
+</html>
