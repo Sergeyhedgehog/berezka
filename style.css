@@ -655,6 +655,55 @@ html, body {
 }
 .btn-modal-cancel:active { background: var(--bg); }
 
+/* === Ответ на сообщение === */
+.reply-preview {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 4px 8px 10px;
+    border-left: 2px solid var(--accent);
+    margin-bottom: 2px;
+    animation: slideDown 0.15s ease forwards;
+}
+.reply-preview-content { flex: 1; min-width: 0; }
+.reply-preview-sender {
+    font-size: 12px; font-weight: 600; color: var(--accent);
+    letter-spacing: -0.01em; margin-bottom: 1px;
+}
+.reply-preview-text {
+    font-size: 13px; color: var(--muted);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* Цитата внутри сообщения */
+.msg-reply-quote {
+    background: rgba(0,0,0,0.07);
+    border-radius: 8px;
+    padding: 5px 8px;
+    margin-bottom: 5px;
+    border-left: 2px solid rgba(255,255,255,0.4);
+    cursor: pointer;
+    transition: opacity 0.15s;
+}
+.msg-reply-quote:active { opacity: 0.7; }
+.message.theirs .msg-reply-quote {
+    background: rgba(42,90,61,0.07);
+    border-left-color: var(--accent);
+}
+.msg-reply-quote-sender {
+    font-size: 11px; font-weight: 600;
+    opacity: 0.85; margin-bottom: 1px;
+}
+.msg-reply-quote-text {
+    font-size: 12px; opacity: 0.7;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* Плавный возврат после свайпа */
+.message { transition: transform 0.18s ease; }
+.message.swiping { transition: none; }
+
 /* === toggle-row (оставлен для совместимости) === */
 .toggle-row {
     display: flex; align-items: center; justify-content: space-between;

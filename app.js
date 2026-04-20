@@ -49,6 +49,7 @@ var currentFolder = '__all__';
 var allChatsData = {};
 var draftTimer = null;
 var currentQuery = null;
+var replyTo = null; // { key, sender, text }
 
 // ============================================================
 // DOM
@@ -851,6 +852,7 @@ function openDmChat(peer) {
     chatSubtitle.textContent = '';
     messagesDiv.innerHTML = '';
     closeSearch();
+    cancelReply();
     loadPinnedMessages(currentChatId);
 
     db.ref('user_chats/' + fbKey(myUsername) + '/' + fbKey(peer)).update({ peerName: peer, type: 'dm', chatId: currentChatId });
@@ -873,6 +875,7 @@ function openGroupChat(groupId, groupName) {
     chatPeerName.textContent = groupName || '\u0413\u0440\u0443\u043F\u043F\u0430';
     messagesDiv.innerHTML = '';
     closeSearch();
+    cancelReply();
     loadPinnedMessages(groupId);
 
     db.ref('groups/' + groupId + '/members').once('value').then(function(s) {
@@ -939,19 +942,74 @@ function renderMessage(key, msg) {
         if (currentChatType === 'group' && !isMine) {
             senderHtml = '<div class="msg-sender">' + escapeHtml(msg.sender) + '</div>';
         }
+        var replyHtml = '';
+        if (msg.replyTo) {
+            replyHtml = '<div class="msg-reply-quote" data-reply-key="' + escapeHtml(msg.replyTo.key) + '">' +
+                '<div class="msg-reply-quote-sender">' + escapeHtml(msg.replyTo.sender) + '</div>' +
+                '<div class="msg-reply-quote-text">' + escapeHtml(msg.replyTo.text) + '</div>' +
+                '</div>';
+        }
         var editedHtml = msg.edited ? ' <span class="edited-mark">(\u0438\u0437\u043C.)</span>' : '';
         var statusHtml = isMine ? '<span class="msg-status">' + getStatusIcon(msg) + '</span>' : '';
-        div.innerHTML = senderHtml +
+        div.innerHTML = senderHtml + replyHtml +
             '<div class="text">' + escapeHtml(msg.text) + editedHtml + '</div>' +
             '<div class="time">' + formatTime(msg.timestamp) + ' ' + statusHtml + '</div>';
 
-        // Контекстное меню
+        // Клик по цитате — прокрутка к исходному
+        var quoteEl = div.querySelector('.msg-reply-quote');
+        if (quoteEl) {
+            quoteEl.addEventListener('click', function(e) {
+                e.stopPropagation();
+                var targetKey = quoteEl.getAttribute('data-reply-key');
+                var el = messagesDiv.querySelector('[data-msg-key="' + targetKey + '"]');
+                if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.classList.add('highlight'); setTimeout(function() { el.classList.remove('highlight'); }, 2000); }
+            });
+        }
+
+        // Свайп вправо = ответить + контекстное меню по долгому нажатию
+        var swipe = { startX: 0, startY: 0, moving: false, fired: false };
         var pressTimer;
+
         div.addEventListener('touchstart', function(e) {
-            pressTimer = setTimeout(function() { e.preventDefault(); showMessageContextMenu(key, msg); }, 600);
-        });
-        div.addEventListener('touchend', function() { clearTimeout(pressTimer); });
-        div.addEventListener('touchmove', function() { clearTimeout(pressTimer); });
+            swipe.startX = e.touches[0].clientX;
+            swipe.startY = e.touches[0].clientY;
+            swipe.moving = false;
+            swipe.fired = false;
+            pressTimer = setTimeout(function() { if (!swipe.moving) showMessageContextMenu(key, msg); }, 600);
+        }, { passive: true });
+
+        div.addEventListener('touchmove', function(e) {
+            var dx = e.touches[0].clientX - swipe.startX;
+            var dy = e.touches[0].clientY - swipe.startY;
+            if (!swipe.moving && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) {
+                swipe.moving = true;
+                clearTimeout(pressTimer);
+            }
+            // Горизонтальный свайп вправо
+            if (swipe.moving && dx > 0 && Math.abs(dx) > Math.abs(dy) * 1.2) {
+                e.preventDefault();
+                div.classList.add('swiping');
+                div.style.transform = 'translateX(' + Math.min(dx * 0.55, 72) + 'px)';
+                if (dx > 65 && !swipe.fired) {
+                    swipe.fired = true;
+                    if (navigator.vibrate) navigator.vibrate(12);
+                }
+            }
+        }, { passive: false });
+
+        div.addEventListener('touchend', function() {
+            clearTimeout(pressTimer);
+            div.classList.remove('swiping');
+            div.style.transform = '';
+            if (swipe.fired) setReply(key, msg);
+        }, { passive: true });
+
+        div.addEventListener('touchcancel', function() {
+            clearTimeout(pressTimer);
+            div.classList.remove('swiping');
+            div.style.transform = '';
+        }, { passive: true });
+
         div.addEventListener('contextmenu', function(e) { e.preventDefault(); showMessageContextMenu(key, msg); });
     }
 
@@ -971,11 +1029,27 @@ function updateMessage(key, msg) {
         var isMine = msg.sender === myUsername;
         var senderHtml = '';
         if (currentChatType === 'group' && !isMine) senderHtml = '<div class="msg-sender">' + escapeHtml(msg.sender) + '</div>';
+        var replyHtml = '';
+        if (msg.replyTo) {
+            replyHtml = '<div class="msg-reply-quote" data-reply-key="' + escapeHtml(msg.replyTo.key) + '">' +
+                '<div class="msg-reply-quote-sender">' + escapeHtml(msg.replyTo.sender) + '</div>' +
+                '<div class="msg-reply-quote-text">' + escapeHtml(msg.replyTo.text) + '</div>' +
+                '</div>';
+        }
         var editedHtml = msg.edited ? ' <span class="edited-mark">(\u0438\u0437\u043C.)</span>' : '';
         var statusHtml = isMine ? '<span class="msg-status">' + getStatusIcon(msg) + '</span>' : '';
-        el.innerHTML = senderHtml +
+        el.innerHTML = senderHtml + replyHtml +
             '<div class="text">' + escapeHtml(msg.text) + editedHtml + '</div>' +
             '<div class="time">' + formatTime(msg.timestamp) + ' ' + statusHtml + '</div>';
+        var quoteEl = el.querySelector('.msg-reply-quote');
+        if (quoteEl) {
+            quoteEl.addEventListener('click', function(e) {
+                e.stopPropagation();
+                var targetKey = quoteEl.getAttribute('data-reply-key');
+                var target = messagesDiv.querySelector('[data-msg-key="' + targetKey + '"]');
+                if (target) { target.scrollIntoView({ behavior: 'smooth', block: 'center' }); target.classList.add('highlight'); setTimeout(function() { target.classList.remove('highlight'); }, 2000); }
+            });
+        }
     }
 }
 
@@ -992,6 +1066,7 @@ function showMessageContextMenu(key, msg) {
     var isMine = msg.sender === myUsername;
     var canEdit = isMine && (Date.now() - msg.timestamp < EDIT_TIME_LIMIT);
 
+    buttons.push({ text: '\u2190 \u041E\u0442\u0432\u0435\u0442\u0438\u0442\u044C', action: function() { setReply(key, msg); } });
     buttons.push({ text: '\uD83D\uDCCC \u0417\u0430\u043A\u0440\u0435\u043F\u0438\u0442\u044C', action: function() { pinMessage(key, msg); } });
     if (canEdit) {
         buttons.push({ text: '\u270F\uFE0F \u0420\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u0442\u044C', action: function() { editMessage(key, msg); } });
@@ -1150,6 +1225,22 @@ function onMessageInputChange() {
 }
 
 // ============================================================
+// Ответ на сообщение
+// ============================================================
+function setReply(key, msg) {
+    replyTo = { key: key, sender: msg.sender, text: msg.text };
+    $('reply-preview-sender').textContent = msg.sender;
+    $('reply-preview-text').textContent = msg.text;
+    $('reply-preview').style.display = 'flex';
+    messageInput.focus();
+}
+
+function cancelReply() {
+    replyTo = null;
+    $('reply-preview').style.display = 'none';
+}
+
+// ============================================================
 // Отправка сообщения
 // ============================================================
 function sendMessage() {
@@ -1166,10 +1257,14 @@ function sendMessage() {
     var chatType = currentChatType;
     var peerId = currentPeerId;
 
+    var msgData = { sender: myUsername, text: text, timestamp: firebase.database.ServerValue.TIMESTAMP };
+    if (replyTo) {
+        msgData.replyTo = { key: replyTo.key, sender: replyTo.sender, text: replyTo.text.substring(0, 100) };
+        cancelReply();
+    }
+
     var chatRef = db.ref('chats/' + chatId + '/messages');
-    var newMsgRef = chatRef.push({
-        sender: myUsername, text: text, timestamp: firebase.database.ServerValue.TIMESTAMP
-    });
+    var newMsgRef = chatRef.push(msgData);
     var msgKey = newMsgRef.key;
 
     var preview = text.length > 40 ? text.substring(0, 40) + '...' : text;
@@ -1335,6 +1430,7 @@ function goBack() {
     if (currentQuery) { currentQuery.off(); currentQuery = null; }
     if (currentChatId && db) db.ref('chats/' + currentChatId + '/pinned').off();
     closeSearch();
+    cancelReply();
     currentChatId = null; currentChatType = null; currentPeerId = null;
     peerIdInput.value = '';
     showScreen(screenMain);
@@ -1350,6 +1446,7 @@ function setupEvents() {
     $('btn-send').addEventListener('click', sendMessage);
     messageInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') sendMessage(); });
     messageInput.addEventListener('input', onMessageInputChange);
+    $('btn-cancel-reply').addEventListener('click', cancelReply);
 
     $('btn-back').addEventListener('click', goBack);
     $('btn-chat-menu').addEventListener('click', showChatMenu);
@@ -1382,7 +1479,10 @@ function setupEvents() {
     btnCopy.addEventListener('click', function() {
         var t = myUsername || '';
         if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(t).then(function() { btnCopy.textContent = '\u2705'; setTimeout(function() { btnCopy.textContent = '\uD83D\uDCCB'; }, 1500); }).catch(function() { copyFallback(t); });
+            navigator.clipboard.writeText(t).then(function() {
+                btnCopy.innerHTML = '<svg width="20" height="20"><use href="#ico-check"/></svg>';
+                setTimeout(function() { btnCopy.innerHTML = '<svg width="20" height="20"><use href="#ico-copy"/></svg>'; }, 1500);
+            }).catch(function() { copyFallback(t); });
         } else copyFallback(t);
     });
 
@@ -1419,7 +1519,8 @@ function copyFallback(t) {
     tmp.value = t; tmp.style.position = 'fixed'; tmp.style.opacity = '0';
     document.body.appendChild(tmp); tmp.select();
     document.execCommand('copy'); document.body.removeChild(tmp);
-    btnCopy.textContent = '\u2705'; setTimeout(function() { btnCopy.textContent = '\uD83D\uDCCB'; }, 1500);
+    btnCopy.innerHTML = '<svg width="20" height="20"><use href="#ico-check"/></svg>';
+    setTimeout(function() { btnCopy.innerHTML = '<svg width="20" height="20"><use href="#ico-copy"/></svg>'; }, 1500);
 }
 
 // ============================================================
